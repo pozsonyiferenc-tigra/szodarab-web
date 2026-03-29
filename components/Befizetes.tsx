@@ -33,37 +33,31 @@ export default function Befizetes({ data, onSubmit }: Props) {
   }
 
   return (
-    <div className="flex flex-col gap-4 animate-fade-in">
+    <div className="fade-up" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       {/* Jelenlegi egyenleg */}
-      <div className={`rounded-2xl p-4 border ${penzNegativ ? 'bg-red-50 border-red-200' : 'bg-emerald-50 border-emerald-200'}`}>
-        <h2 className={`text-xs font-semibold uppercase tracking-wider mb-1 ${penzNegativ ? 'text-red-600' : 'text-emerald-600'}`}>
-          Jelenlegi egyenleg
-        </h2>
-        <p className={`text-2xl font-bold ${penzNegativ ? 'text-red-600' : 'text-emerald-600'}`}>
-          {formatMoney(data.balance.penz)}
-        </p>
+      <div className={`balance-card ${penzNegativ ? 'danger' : 'positive'}`}>
+        <div className="balance-label">Jelenlegi egyenleg</div>
+        <div className="balance-amount">{formatMoney(data.balance.penz)}</div>
       </div>
 
       {/* Összeg */}
-      <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-        <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Összeg (Ft)</h2>
+      <div className="card">
+        <div className="card-title">Összeg (Ft)</div>
         <input
           type="number"
+          className="input-field input-big"
           value={amount}
           min={0}
           step={100}
           onChange={e => setAmount(Math.max(0, parseFloat(e.target.value) || 0))}
-          className="w-full px-4 py-3 rounded-xl border border-gray-200 text-2xl font-bold text-gray-800 text-center focus:outline-none focus:border-emerald-400 transition-colors"
         />
-        <div className="flex gap-2 mt-3">
+        <div className="quick-btns" style={{ marginTop: 12 }}>
           {QUICK_AMOUNTS.map(v => (
             <button
               key={v}
+              className={`quick-btn${amount === v ? ' active' : ''}`}
+              style={amount === v ? { background: 'var(--green)', borderColor: 'var(--green)', color: 'white' } : {}}
               onClick={() => setAmount(v)}
-              className={`flex-1 py-2 rounded-xl text-sm font-semibold transition-all active:scale-95 ${
-                amount === v ? 'text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-              style={amount === v ? { background: '#10b981' } : {}}
             >
               {v.toLocaleString('hu-HU')}
             </button>
@@ -72,29 +66,30 @@ export default function Befizetes({ data, onSubmit }: Props) {
       </div>
 
       {/* Új egyenleg előnézet */}
-      <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center justify-between">
-        <span className="text-sm text-gray-500">Új egyenleg</span>
-        <span className={`text-xl font-bold ${newBalance < 0 ? 'text-red-600' : 'text-emerald-600'}`}>
-          {formatMoney(newBalance)}
-        </span>
+      <div className="card">
+        <div className="summary-row">
+          <span className="summary-label">Új egyenleg</span>
+          <span className="summary-value" style={{ color: newBalance < 0 ? 'var(--red)' : 'var(--green)' }}>
+            {formatMoney(newBalance)}
+          </span>
+        </div>
       </div>
 
-      <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-        <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Megjegyzés</h2>
+      <div className="card">
+        <div className="card-title">Megjegyzés</div>
         <textarea
+          className="input-field"
           value={megjegyzes}
           onChange={e => setMegjegyzes(e.target.value)}
           rows={2}
           maxLength={100}
-          className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-800 resize-none focus:outline-none focus:border-emerald-400 transition-colors"
         />
       </div>
 
       <button
+        className="btn-primary btn-green"
         onClick={submit}
         disabled={amount <= 0}
-        className="w-full py-4 rounded-2xl font-bold text-white text-base transition-all active:scale-95 shadow-sm disabled:opacity-40"
-        style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}
       >
         ✅ Rögzít – {formatMoney(amount)} befizetés
       </button>

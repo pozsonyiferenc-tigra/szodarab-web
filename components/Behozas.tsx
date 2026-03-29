@@ -28,38 +28,30 @@ export default function Behozas({ data: _data, onSubmit }: Props) {
   }
 
   return (
-    <div className="flex flex-col gap-4 animate-fade-in">
-      <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-        <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Patron típusa</h2>
+    <div className="fade-up" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div className="card">
+        <div className="card-title">Patron típusa</div>
         <TypeSelector value={type} onChange={setType} />
       </div>
 
-      <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-        <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Mennyiség</h2>
-        <Counter
-          value={quantity}
-          onChange={setQuantity}
-          quickValues={[1, 2, 3, 4]}
-        />
+      <div className="card">
+        <div className="card-title">Mennyiség</div>
+        <Counter value={quantity} onChange={setQuantity} quickValues={[1, 2, 3, 4]} />
       </div>
 
-      <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-        <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Megjegyzés (opcionális)</h2>
+      <div className="card">
+        <div className="card-title">Megjegyzés (opcionális)</div>
         <textarea
+          className="input-field"
           value={megjegyzes}
           onChange={e => setMegjegyzes(e.target.value)}
           rows={3}
           maxLength={100}
           placeholder="Pl. hétfőn hoztam..."
-          className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-800 resize-none focus:outline-none focus:border-blue-400 transition-colors"
         />
       </div>
 
-      <button
-        onClick={submit}
-        className="w-full py-4 rounded-2xl font-bold text-white text-base transition-all active:scale-95 shadow-sm"
-        style={{ background: 'linear-gradient(135deg, #2196F3, #1565C0)' }}
-      >
+      <button className="btn-primary btn-blue" onClick={submit}>
         ✅ Rögzít – {quantity} db {type === 'kek' ? 'kék' : 'rózsaszín'} behozás
       </button>
     </div>

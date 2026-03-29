@@ -15,31 +15,21 @@ export interface DashboardData {
   userName: string
   userEmail: string
   isAdmin: boolean
-  balance: {
-    kekPatron: number
-    rozsaszinPatron: number
-    penz: number
-  }
-  stock: {
-    kekUres: number
-    kekTele: number
-    rozsaszinUres: number
-    rozsaszinTele: number
-  }
+  balance: { kekPatron: number; rozsaszinPatron: number; penz: number }
+  stock: { kekUres: number; kekTele: number; rozsaszinUres: number; rozsaszinTele: number }
   patronPrice: number
   csereMinimum: number
-  csereSuggestions: Array<{
-    tipus: string
-    uzenet: string
-    mennyiseg: number
-    csereelheto: boolean
-  }>
+  csereSuggestions: Array<{ tipus: string; uzenet: string; mennyiseg: number; csereelheto: boolean }>
 }
 
-export interface ToastMsg {
-  id: number
-  text: string
-  type: 'success' | 'error'
+export interface ToastMsg { id: number; text: string; type: 'success' | 'error' }
+
+const PAGE_TITLES: Record<Page, string> = {
+  dashboard: '',
+  behozas: 'Behozás',
+  elvitel: 'Elvitel',
+  befizetes: 'Befizetés',
+  csere: 'Csere',
 }
 
 export default function App() {
@@ -59,8 +49,7 @@ export default function App() {
     try {
       const res = await fetch('/api/dashboard')
       if (!res.ok) throw new Error('Betöltési hiba')
-      const json: DashboardData = await res.json()
-      setData(json)
+      setData(await res.json())
     } catch {
       showToast('Hiba az adatok betöltésekor', 'error')
     } finally {
@@ -68,11 +57,7 @@ export default function App() {
     }
   }, [showToast])
 
-  useEffect(() => {
-    loadDashboard()
-  }, [loadDashboard])
-
-  const navigate = (p: Page) => setPage(p)
+  useEffect(() => { loadDashboard() }, [loadDashboard])
 
   const submitTransaction = async (txData: Record<string, unknown>) => {
     setLoading(true)
@@ -86,10 +71,7 @@ export default function App() {
       if (result.success) {
         showToast(result.message, 'success')
         setData(null)
-        setTimeout(() => {
-          setPage('dashboard')
-          loadDashboard()
-        }, 1200)
+        setTimeout(() => { setPage('dashboard'); loadDashboard() }, 1200)
       } else {
         showToast(result.message || result.error, 'error')
       }
@@ -101,52 +83,39 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-dvh flex flex-col">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
-        <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
-          <h1 className="text-2xl font-bold tracking-tight">
-            <span style={{ color: '#2196F3' }}>Szóda</span>
-            <span style={{ color: '#E91E63' }}>rab</span>
-          </h1>
-          {page !== 'dashboard' && (
-            <button
-              onClick={() => navigate('dashboard')}
-              className="flex items-center gap-1 text-sm font-medium text-gray-500 hover:text-gray-800 transition-colors px-3 py-1.5 rounded-lg hover:bg-gray-100"
-            >
-              ← Vissza
-            </button>
+    <div className="app-shell">
+      <header className="app-header">
+        <div className="app-header-inner">
+          {page === 'dashboard' ? (
+            <span className="app-logo">
+              <span className="blue">Szóda</span><span className="pink">rab</span>
+            </span>
+          ) : (
+            <>
+              <button className="btn-back" onClick={() => setPage('dashboard')}>
+                ← Vissza
+              </button>
+              <span className="page-title" style={{ fontSize: 17, fontWeight: 700 }}>
+                {PAGE_TITLES[page]}
+              </span>
+              <div style={{ width: 80 }} />
+            </>
           )}
         </div>
       </header>
 
-      {/* Content */}
-      <main className="flex-1 max-w-lg mx-auto w-full px-4 py-5 animate-fade-in">
-        {page === 'dashboard' && (
-          <Dashboard data={data} onNavigate={navigate} onRefresh={() => loadDashboard(true)} />
-        )}
-        {page === 'behozas' && data && (
-          <Behozas data={data} onSubmit={submitTransaction} />
-        )}
-        {page === 'elvitel' && data && (
-          <Elvitel data={data} onSubmit={submitTransaction} />
-        )}
-        {page === 'befizetes' && data && (
-          <Befizetes data={data} onSubmit={submitTransaction} />
-        )}
-        {page === 'csere' && data && (
-          <Csere data={data} onSubmit={submitTransaction} />
-        )}
+      <main className="app-main">
+        {page === 'dashboard' && <Dashboard data={data} onNavigate={setPage} onRefresh={() => loadDashboard(true)} />}
+        {page === 'behozas'   && data && <Behozas   data={data} onSubmit={submitTransaction} />}
+        {page === 'elvitel'   && data && <Elvitel   data={data} onSubmit={submitTransaction} />}
+        {page === 'befizetes' && data && <Befizetes data={data} onSubmit={submitTransaction} />}
+        {page === 'csere'     && data && <Csere     data={data} onSubmit={submitTransaction} />}
       </main>
 
-      {/* Toast notifications */}
-      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 pointer-events-none">
-        {toasts.map(t => (
-          <Toast key={t.id} text={t.text} type={t.type} />
-        ))}
+      <div style={{ position: 'fixed', top: 16, left: '50%', transform: 'translateX(-50%)', zIndex: 60, display: 'flex', flexDirection: 'column', gap: 8, pointerEvents: 'none' }}>
+        {toasts.map(t => <Toast key={t.id} text={t.text} type={t.type} />)}
       </div>
 
-      {/* Loading overlay */}
       {loading && <Loading />}
     </div>
   )

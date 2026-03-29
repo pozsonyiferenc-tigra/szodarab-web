@@ -34,55 +34,58 @@ export default function Elvitel({ data, onSubmit }: Props) {
   }
 
   return (
-    <div className="flex flex-col gap-4 animate-fade-in">
+    <div className="fade-up" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       {/* Egyenleg info */}
-      <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
-        <h2 className="text-xs font-semibold text-amber-700 uppercase tracking-wider mb-2">Patron egyenleged</h2>
-        <div className="flex gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-blue-500" />
-            <span className="text-sm font-semibold text-gray-700">{data.balance.kekPatron} db kék</span>
+      <div className="warn-box">
+        <div style={{ fontWeight: 700, marginBottom: 8, fontSize: 11, textTransform: 'uppercase', letterSpacing: '.08em' }}>
+          Patron egyenleged
+        </div>
+        <div style={{ display: 'flex', gap: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div className="dot dot-blue" />
+            <span style={{ fontSize: 14, fontWeight: 600 }}>{data.balance.kekPatron} db kék</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-pink-500" />
-            <span className="text-sm font-semibold text-gray-700">{data.balance.rozsaszinPatron} db rózsaszín</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div className="dot dot-pink" />
+            <span style={{ fontSize: 14, fontWeight: 600 }}>{data.balance.rozsaszinPatron} db rózsaszín</span>
           </div>
         </div>
         {maxQty === 0 && (
-          <p className="text-amber-700 text-xs mt-2 font-medium">⚠️ Nincs elegendő {type === 'kek' ? 'kék' : 'rózsaszín'} patron egyenleged!</p>
+          <div style={{ marginTop: 8, fontSize: 13, fontWeight: 600 }}>
+            ⚠️ Nincs elegendő {type === 'kek' ? 'kék' : 'rózsaszín'} patron egyenleged!
+          </div>
         )}
       </div>
 
-      <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-        <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Patron típusa</h2>
+      <div className="card">
+        <div className="card-title">Patron típusa</div>
         <TypeSelector value={type} onChange={(t) => { setType(t); setQuantity(1) }} />
       </div>
 
-      <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-        <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">
-          Mennyiség (max: {maxQty} db)
-        </h2>
+      <div className="card">
+        <div className="card-title">Mennyiség (max: {maxQty} db)</div>
         <Counter
           value={quantity}
           onChange={setQuantity}
           min={1}
-          max={maxQty}
+          max={Math.max(1, maxQty)}
           quickValues={[1, 2]}
           extraButton={{ label: 'Max', getValue: () => maxQty }}
         />
       </div>
 
       {/* Fizetendő */}
-      <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center justify-between">
-        <span className="text-sm text-gray-500 font-medium">Fizetendő</span>
-        <span className="text-xl font-bold text-gray-800">{formatMoney(fizetendo)}</span>
+      <div className="card">
+        <div className="summary-row">
+          <span className="summary-label">Fizetendő</span>
+          <span className="summary-value">{formatMoney(fizetendo)}</span>
+        </div>
       </div>
 
       <button
+        className="btn-primary btn-pink"
         onClick={submit}
         disabled={maxQty === 0}
-        className="w-full py-4 rounded-2xl font-bold text-white text-base transition-all active:scale-95 shadow-sm disabled:opacity-40"
-        style={{ background: maxQty === 0 ? '#ccc' : 'linear-gradient(135deg, #E91E63, #880E4F)' }}
       >
         ✅ Rögzít – {quantity} db {type === 'kek' ? 'kék' : 'rózsaszín'} elvitel
       </button>
