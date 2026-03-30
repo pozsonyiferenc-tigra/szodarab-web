@@ -195,9 +195,10 @@ export default function App() {
           <div className={`app-header-inner${page !== 'dashboard' ? ' subpage' : ''}`}>
             {page === 'dashboard' ? (
               <>
-                <span className="app-logo">
-                  <span className="blue">Szóda</span><span className="pink">rab</span>
-                </span>
+                <div className="logo-pill">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/logo.png" alt="Szódarab" className="app-logo-img" />
+                </div>
                 <button className="btn-theme" onClick={toggleTheme} title={theme === 'dark' ? 'Világos mód' : 'Sötét mód'}>
                   {themeIcon}
                 </button>

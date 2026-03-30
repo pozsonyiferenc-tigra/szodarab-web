@@ -219,12 +219,17 @@ input, textarea { font-family: inherit; }
 .app-header-inner {
   max-width: 520px;
   margin: 0 auto;
-  padding: 16px 20px;
+  padding: 12px 16px;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 64px;
+  min-height: 60px;
   position: relative;
+}
+
+/* Dashboard: logó középen, téma gomb jobbra (absolute) */
+.app-header-inner:not(.subpage) {
+  justify-content: center;
 }
 
 /* Logó – nagyobb, középen */
@@ -268,6 +273,35 @@ input, textarea { font-family: inherit; }
   transition: all .15s;
 }
 .btn-back:active { transform: scale(.96); background: rgba(255,255,255,0.14); }
+
+/* LOGO PILL ------------------------------------------- */
+.logo-pill {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 18px;
+  border-radius: 14px;
+  transition: box-shadow .25s, background .25s;
+}
+
+/* Sötét téma: fehér pill, hogy a fehér hátterű PNG látszódjon */
+[data-theme="dark"] .logo-pill,
+:not([data-theme]) .logo-pill {
+  background: rgba(255,255,255,0.93);
+  box-shadow: 0 3px 18px rgba(0,0,0,.45), 0 0 0 1px rgba(255,255,255,.08);
+}
+
+/* Világos téma: nincs háttér, a logó natívan illeszkedik */
+[data-theme="light"] .logo-pill {
+  background: transparent;
+  box-shadow: none;
+}
+
+.app-logo-img {
+  height: 34px;
+  width: auto;
+  display: block;
+}
 
 /* PAGE TITLE ------------------------------------------ */
 .page-title {
