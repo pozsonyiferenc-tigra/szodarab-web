@@ -97,7 +97,13 @@ function BgCylinders() {
 }
 
 export default function App() {
-  const [theme, setThemeState] = useState<'dark' | 'light'>('dark')
+  // localStorage hint a villogás elkerüléséhez betöltés előtt
+  const [theme, setThemeState] = useState<'dark' | 'light'>(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('szoda-theme-hint') as 'dark' | 'light') ?? 'dark'
+    }
+    return 'dark'
+  })
   const [page, setPage] = useState<Page>('dashboard')
   const [data, setData] = useState<DashboardData | null>(null)
   const [authState, setAuthState] = useState<AuthState>('loading')
@@ -123,6 +129,7 @@ export default function App() {
         const t = json.tema ?? 'dark'
         setThemeState(t)
         applyTheme(t)
+        localStorage.setItem('szoda-theme-hint', t)
       } else {
         const body = await res.json()
         if (res.status === 403) {
@@ -202,10 +209,12 @@ export default function App() {
           <div className={`app-header-inner${page !== 'dashboard' ? ' subpage' : ''}`}>
             {page === 'dashboard' ? (
               <>
-                <div className="logo-pill">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/logo.png" alt="Szódarab" className="app-logo-img" />
-                </div>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={theme === 'light' ? '/logo-light.png' : '/logo-dark.png'}
+                  alt="Szódarab"
+                  className="app-logo-img"
+                />
                 <button className="btn-theme" onClick={toggleTheme} title={theme === 'dark' ? 'Világos mód' : 'Sötét mód'}>
                   {themeIcon}
                 </button>
