@@ -7,6 +7,39 @@ function formatMoney(n: number) {
   return new Intl.NumberFormat('hu-HU').format(n) + ' Ft'
 }
 
+/* Small soda cylinder icon for action buttons */
+function CylIcon({ color, size = 48 }: { color: string; size?: number }) {
+  const h = Math.round(size * 2.5)
+  const cx = size / 2
+  const dark = color === '#1AC9FF' ? '#005A90' : '#880040'
+  const id = `cyl_${color.replace('#', '')}`
+  return (
+    <svg width={size} height={h} viewBox="0 0 50 125" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id={id} x1="0" x2="1">
+          <stop offset="0%"   stopColor={dark}  stopOpacity=".7"/>
+          <stop offset="45%"  stopColor={color}/>
+          <stop offset="100%" stopColor={dark}  stopOpacity=".7"/>
+        </linearGradient>
+      </defs>
+      {/* nozzle */}
+      <rect x="20" y="4" width="10" height="19" rx="4" fill="#4A6070"/>
+      <ellipse cx="25" cy="4" rx="5" ry="2.5" fill="#607888"/>
+      {/* shoulder */}
+      <ellipse cx="25" cy="24" rx="19" ry="6.5" fill={color} opacity=".9"/>
+      {/* body */}
+      <rect x="6"  y="24" width="38" height="82" rx="5" fill={`url(#${id})`}/>
+      {/* base */}
+      <ellipse cx="25" cy="106" rx="19" ry="6.5" fill={dark} opacity=".7"/>
+      {/* highlight */}
+      <rect x="9"  y="27" width="9"  height="76" rx="3.5" fill="rgba(255,255,255,.25)"/>
+      {/* label */}
+      <text x="25" y="74" textAnchor="middle" fill="rgba(255,255,255,.35)"
+        fontSize="9" fontWeight="700" fontFamily="system-ui,sans-serif">CO₂</text>
+    </svg>
+  )
+}
+
 interface Props {
   data: DashboardData | null
   onNavigate: (p: Page) => void
@@ -19,10 +52,10 @@ export default function Dashboard({ data, onNavigate, onRefresh }: Props) {
   if (!data) {
     return (
       <div className="fade-up" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <div className="skeleton" style={{ height: 88 }} />
-        <div className="skeleton" style={{ height: 108 }} />
-        <div className="skeleton" style={{ height: 108 }} />
-        <div className="skeleton" style={{ height: 88 }} />
+        <div className="skeleton" style={{ height: 90 }} />
+        <div className="skeleton" style={{ height: 110 }} />
+        <div className="skeleton" style={{ height: 110 }} />
+        <div className="skeleton" style={{ height: 90 }} />
       </div>
     )
   }
@@ -55,14 +88,14 @@ export default function Dashboard({ data, onNavigate, onRefresh }: Props) {
         <div className="patron-row">
           <div className="patron-label">
             <div className="dot dot-blue" />
-            Kék
+            Kék patron
           </div>
           <div className="patron-value">{data.balance.kekPatron} db</div>
         </div>
         <div className="patron-row">
           <div className="patron-label">
             <div className="dot dot-pink" />
-            Rózsaszín
+            Rózsaszín patron
           </div>
           <div className="patron-value">{data.balance.rozsaszinPatron} db</div>
         </div>
@@ -82,15 +115,19 @@ export default function Dashboard({ data, onNavigate, onRefresh }: Props) {
         </button>
       </div>
 
-      {/* Akció gombok */}
+      {/* Akció gombok – szódapatron ikonokkal */}
       <div className="action-grid">
         <button className="action-btn behozas" onClick={() => onNavigate('behozas')}>
-          <div className="icon">📦</div>
+          <div className="action-cyl">
+            <CylIcon color="#1AC9FF" size={46} />
+          </div>
           <div className="action-name">Behozás</div>
           <div className="action-desc">Üres patron hozása</div>
         </button>
         <button className="action-btn elvitel" onClick={() => onNavigate('elvitel')}>
-          <div className="icon">🥤</div>
+          <div className="action-cyl">
+            <CylIcon color="#FF2090" size={46} />
+          </div>
           <div className="action-name">Elvitel</div>
           <div className="action-desc">Tele patron elvitele</div>
         </button>
@@ -132,10 +169,7 @@ export default function Dashboard({ data, onNavigate, onRefresh }: Props) {
 
       {/* Admin csere gomb */}
       {data.isAdmin && (
-        <button
-          className="btn-primary btn-orange"
-          onClick={() => onNavigate('csere')}
-        >
+        <button className="btn-primary btn-orange" onClick={() => onNavigate('csere')}>
           ↔️ Csere (Admin)
         </button>
       )}
