@@ -34,3 +34,20 @@ export async function appendRow(sheetName: string, values: (string | number | bo
     },
   })
 }
+
+export async function updateCell(sheetName: string, row: number, col: number, value: string): Promise<void> {
+  const sheets = getSheetsClient()
+  const colLetter = String.fromCharCode(64 + col)
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: SPREADSHEET_ID,
+    range: `${sheetName}!${colLetter}${row}`,
+    valueInputOption: 'USER_ENTERED',
+    requestBody: { values: [[value]] },
+  })
+}
+
+export async function getSheetWithRowNumbers(range: string): Promise<{ row: number; values: string[] }[]> {
+  const rows = await getSheetValues(range)
+  const startRow = parseInt(range.split('A')[1]?.split(':')[0] ?? '2')
+  return rows.map((values, i) => ({ row: startRow + i, values }))
+}

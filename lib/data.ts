@@ -1,5 +1,5 @@
-import { getSheetValues, appendRow } from './sheets'
-import { getCached } from './cache'
+import { getSheetValues, appendRow, updateCell, getSheetWithRowNumbers } from './sheets'
+import { getCached, invalidate } from './cache'
 
 const TTL = 5 * 60 * 1000 // 5 perc
 
@@ -49,6 +49,33 @@ export async function getUserName(email: string): Promise<string> {
 export async function getNotificationEmails(): Promise<string[]> {
   const tags = await getTags()
   return tags.filter(t => t.aktiv && t.csereErtesites).map(t => t.email)
+}
+
+export async function registerUser(email: string, nev: string): Promise<{ success: boolean; message: string; alreadyExists?: boolean }> {
+  const tags = await getTags()
+  const existing = tags.find(t => t.email === email.toLowerCase().trim())
+  if (existing) {
+    return { success: false, message: 'Ez az email már szerepel a rendszerben.', alreadyExists: true }
+  }
+  await appendRow('Tagok', [nev, email.toLowerCase().trim(), 'FALSE', 'tag', 'FALSE'])
+  invalidate('tagok')
+  return { success: true, message: 'Regisztrációd beérkezett, a menedzser jóváhagyására vár.' }
+}
+
+export async function getPendingUsers(): Promise<{ row: number; nev: string; email: string }[]> {
+  const rows = await getSheetWithRowNumbers('Tagok!A2:E')
+  return rows
+    .filter(r => r.values[2]?.toString().toUpperCase() !== 'TRUE')
+    .map(r => ({ row: r.row, nev: r.values[0] ?? '', email: r.values[1] ?? '' }))
+}
+
+export async function approveUser(email: string): Promise<{ success: boolean; message: string }> {
+  const rows = await getSheetWithRowNumbers('Tagok!A2:E')
+  const found = rows.find(r => r.values[1]?.toLowerCase().trim() === email.toLowerCase().trim())
+  if (!found) return { success: false, message: 'Felhasználó nem található.' }
+  await updateCell('Tagok', found.row, 3, 'TRUE') // col C = aktiv
+  invalidate('tagok')
+  return { success: true, message: `${found.values[0]} hozzáférése jóváhagyva.` }
 }
 
 // ==================== BEÁLLÍTÁSOK ====================

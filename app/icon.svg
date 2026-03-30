@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <defs>
+    <linearGradient id="b" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0%" stop-color="#005A90"/>
+      <stop offset="45%" stop-color="#1AC9FF"/>
+      <stop offset="100%" stop-color="#005A90"/>
+    </linearGradient>
+    <linearGradient id="p" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0%" stop-color="#880040"/>
+      <stop offset="45%" stop-color="#FF2090"/>
+      <stop offset="100%" stop-color="#880040"/>
+    </linearGradient>
+  </defs>
+  <!-- background -->
+  <rect width="32" height="32" rx="7" fill="#07091A"/>
+  <!-- blue cylinder (left) -->
+  <rect x="3" y="7" width="5" height="3" rx="1.5" fill="#4A6070"/>
+  <ellipse cx="5.5" cy="10" rx="5.5" ry="2" fill="#1AC9FF"/>
+  <rect x="0" y="10" width="11" height="17" rx="2.5" fill="url(#b)"/>
+  <ellipse cx="5.5" cy="27" rx="5.5" ry="2" fill="#005A90" opacity=".7"/>
+  <rect x="1" y="11" width="3.5" height="15" rx="1.5" fill="rgba(255,255,255,.22)"/>
+  <!-- pink cylinder (right) -->
+  <rect x="24" y="7" width="5" height="3" rx="1.5" fill="#604060"/>
+  <ellipse cx="26.5" cy="10" rx="5.5" ry="2" fill="#FF2090"/>
+  <rect x="21" y="10" width="11" height="17" rx="2.5" fill="url(#p)"/>
+  <ellipse cx="26.5" cy="27" rx="5.5" ry="2" fill="#880040" opacity=".7"/>
+  <rect x="22" y="11" width="3.5" height="15" rx="1.5" fill="rgba(255,255,255,.22)"/>
+  <!-- CO2 label center -->
+  <text x="16" y="21" text-anchor="middle" fill="rgba(255,255,255,.55)" font-size="5.5" font-weight="700" font-family="system-ui,sans-serif">CO₂</text>
+</svg>

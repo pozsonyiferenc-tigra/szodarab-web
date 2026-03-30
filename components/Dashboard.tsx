@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { DashboardData, Page } from './App'
 import { useUser } from '@clerk/nextjs'
 
@@ -46,6 +47,32 @@ interface Props {
   onRefresh: () => void
 }
 
+function usePendingUsers(isAdmin: boolean) {
+  const [pending, setPending] = useState<{ row: number; nev: string; email: string }[]>([])
+  const [approving, setApproving] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!isAdmin) return
+    fetch('/api/admin/pending').then(r => r.json()).then(setPending).catch(() => {})
+  }, [isAdmin])
+
+  const approve = async (email: string) => {
+    setApproving(email)
+    try {
+      const res = await fetch('/api/admin/pending', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      })
+      if (res.ok) setPending(prev => prev.filter(p => p.email !== email))
+    } finally {
+      setApproving(null)
+    }
+  }
+
+  return { pending, approve, approving }
+}
+
 export default function Dashboard({ data, onNavigate, onRefresh }: Props) {
   const { user } = useUser()
 
@@ -59,6 +86,8 @@ export default function Dashboard({ data, onNavigate, onRefresh }: Props) {
       </div>
     )
   }
+
+  const { pending, approve, approving } = usePendingUsers(data.isAdmin)
 
   const penzNegativ = data.balance.penz < 0
   const penzNagyon  = data.balance.penz < -5000
@@ -167,11 +196,36 @@ export default function Dashboard({ data, onNavigate, onRefresh }: Props) {
         </div>
       ))}
 
-      {/* Admin csere gomb */}
+      {/* Admin szekció */}
       {data.isAdmin && (
-        <button className="btn-primary btn-orange" onClick={() => onNavigate('csere')}>
-          ↔️ Csere (Admin)
-        </button>
+        <>
+          <button className="btn-primary btn-orange" onClick={() => onNavigate('csere')}>
+            ↔️ Csere (Admin)
+          </button>
+
+          {pending.length > 0 && (
+            <div className="card">
+              <div className="card-title" style={{ color: 'var(--amber)' }}>
+                🔔 Jóváhagyásra vár ({pending.length})
+              </div>
+              {pending.map(p => (
+                <div key={p.email} className="pending-row">
+                  <div className="pending-info">
+                    <div className="pending-name">{p.nev}</div>
+                    <div className="pending-email">{p.email}</div>
+                  </div>
+                  <button
+                    className="btn-approve"
+                    onClick={() => approve(p.email)}
+                    disabled={approving === p.email}
+                  >
+                    {approving === p.email ? '...' : '✓ Jóváhagy'}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
       )}
     </div>
   )

@@ -1,6 +1,6 @@
 import { auth, currentUser } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
-import { getDashboardData, isAuthorizedUser } from '@/lib/data'
+import { getDashboardData, getTag } from '@/lib/data'
 
 export async function GET() {
   const { userId } = await auth()
@@ -10,8 +10,14 @@ export async function GET() {
   const email = user?.emailAddresses[0]?.emailAddress
   if (!email) return NextResponse.json({ error: 'No email' }, { status: 400 })
 
-  const authorized = await isAuthorizedUser(email)
-  if (!authorized) return NextResponse.json({ error: 'Hozzáférés megtagadva' }, { status: 403 })
+  const tag = await getTag(email)
+
+  if (!tag) {
+    return NextResponse.json({ error: 'not_registered', clerkName: user?.fullName ?? '' }, { status: 403 })
+  }
+  if (!tag.aktiv) {
+    return NextResponse.json({ error: 'pending', nev: tag.nev }, { status: 403 })
+  }
 
   const data = await getDashboardData(email)
   return NextResponse.json(data)
