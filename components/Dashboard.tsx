@@ -136,14 +136,14 @@ export default function Dashboard({ data, onNavigate, onRefresh }: Props) {
           <div className="action-cyl">
             <CylIcon color="#1AC9FF" size={46} />
           </div>
-          <div className="action-name">Behozás</div>
+          <div className="action-name">Üres behozás</div>
           <div className="action-desc">Üres patron hozása</div>
         </button>
         <button className="action-btn elvitel" onClick={() => onNavigate('elvitel')}>
           <div className="action-cyl">
             <CylIcon color="#FF2090" size={46} />
           </div>
-          <div className="action-name">Elvitel</div>
+          <div className="action-name">Teli elvitel</div>
           <div className="action-desc">Tele patron elvitele</div>
         </button>
       </div>

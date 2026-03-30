@@ -29,8 +29,8 @@ export interface ToastMsg { id: number; text: string; type: 'success' | 'error' 
 
 const PAGE_TITLES: Record<Page, string> = {
   dashboard: '',
-  behozas: 'Behozás',
-  elvitel: 'Elvitel',
+  behozas: 'Üres behozás',
+  elvitel: 'Teli elvitel',
   befizetes: 'Befizetés',
   csere: 'Csere',
 }

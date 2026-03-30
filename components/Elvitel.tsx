@@ -87,7 +87,7 @@ export default function Elvitel({ data, onSubmit }: Props) {
         onClick={submit}
         disabled={maxQty === 0}
       >
-        ✅ Rögzít – {quantity} db {type === 'kek' ? 'kék' : 'rózsaszín'} elvitel
+        ✅ Rögzít – {quantity} db {type === 'kek' ? 'kék' : 'rózsaszín'} teli elvitel
       </button>
     </div>
   )

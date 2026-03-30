@@ -52,7 +52,7 @@ export default function Behozas({ data: _data, onSubmit }: Props) {
       </div>
 
       <button className="btn-primary btn-blue" onClick={submit}>
-        ✅ Rögzít – {quantity} db {type === 'kek' ? 'kék' : 'rózsaszín'} behozás
+        ✅ Rögzít – {quantity} db {type === 'kek' ? 'kék' : 'rózsaszín'} üres behozás
       </button>
     </div>
   )
