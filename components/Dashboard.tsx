@@ -130,20 +130,6 @@ export default function Dashboard({ data, onNavigate, onRefresh }: Props) {
         </div>
       </div>
 
-      {/* Pénzügyi egyenleg */}
-      <div className={`balance-card ${balanceClass}`}>
-        <div className="balance-label">Pénzügyi egyenleg</div>
-        <div className="balance-amount">{formatMoney(data.balance.penz)}</div>
-        {penzNegativ && <div className="balance-sub">Tartozás – rendezd mielőbb!</div>}
-        <button
-          className={`btn-primary ${penzNagyon ? 'btn-red' : penzNegativ ? 'btn-amber' : 'btn-green'}`}
-          style={{ marginTop: 14 }}
-          onClick={() => onNavigate('befizetes')}
-        >
-          💰 Befizetés
-        </button>
-      </div>
-
       {/* Akció gombok – szódapatron ikonokkal */}
       <div className="action-grid">
         <button className="action-btn behozas" onClick={() => onNavigate('behozas')}>
@@ -159,6 +145,20 @@ export default function Dashboard({ data, onNavigate, onRefresh }: Props) {
           </div>
           <div className="action-name">Elvitel</div>
           <div className="action-desc">Tele patron elvitele</div>
+        </button>
+      </div>
+
+      {/* Pénzügyi egyenleg */}
+      <div className={`balance-card ${balanceClass}`}>
+        <div className="balance-label">Pénzügyi egyenleg</div>
+        <div className="balance-amount">{formatMoney(data.balance.penz)}</div>
+        {penzNegativ && <div className="balance-sub">Tartozás – rendezd mielőbb!</div>}
+        <button
+          className={`btn-primary ${penzNagyon ? 'btn-red' : penzNegativ ? 'btn-amber' : 'btn-green'}`}
+          style={{ marginTop: 14 }}
+          onClick={() => onNavigate('befizetes')}
+        >
+          💰 Befizetés
         </button>
       </div>
 
