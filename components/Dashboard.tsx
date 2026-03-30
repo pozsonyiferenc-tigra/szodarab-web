@@ -189,16 +189,15 @@ export default function Dashboard({ data, onNavigate, onRefresh }: Props) {
         </div>
       </div>
 
-      {/* Csere javaslatok */}
-      {data.csereSuggestions.map((s, i) => (
-        <div key={i} className={`suggestion ${s.csereelheto ? 'ready' : 'waiting'}`}>
-          {s.csereelheto ? '✅ ' : '⏳ '}{s.uzenet}
-        </div>
-      ))}
-
-      {/* Admin szekció */}
+      {/* Admin szekció – csere javaslatok + gomb + jóváhagyások */}
       {data.isAdmin && (
         <>
+          {data.csereSuggestions.map((s, i) => (
+            <div key={i} className={`suggestion ${s.csereelheto ? 'ready' : 'waiting'}`}>
+              {s.csereelheto ? '✅ ' : '⏳ '}{s.uzenet}
+            </div>
+          ))}
+
           <button className="btn-primary btn-orange" onClick={() => onNavigate('csere')}>
             ↔️ Csere (Admin)
           </button>

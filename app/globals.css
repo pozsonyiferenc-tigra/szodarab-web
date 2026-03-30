@@ -70,7 +70,15 @@
 }
 
 [data-theme="light"] .user-card {
-  background: linear-gradient(135deg, #0A2060 0%, #40003A 100%);
+  background: linear-gradient(135deg, #1565C0 0%, #880E4F 100%);
+}
+
+/* Felhasználói blokk szövegei maradnak fehérek, de a glowok kicsit erősebbek */
+[data-theme="light"] .user-card::before {
+  background: rgba(26,201,255,0.35);
+}
+[data-theme="light"] .user-card::after {
+  background: rgba(255,32,144,0.35);
 }
 
 [data-theme="light"] .bg-cyl-blue,
