@@ -23,6 +23,8 @@ export interface DashboardData {
   patronPrice: number
   csereMinimum: number
   csereSuggestions: Array<{ tipus: string; uzenet: string; mennyiseg: number; csereelheto: boolean }>
+  szamlaszam: string
+  revolut: string
 }
 
 export interface ToastMsg { id: number; text: string; type: 'success' | 'error' }

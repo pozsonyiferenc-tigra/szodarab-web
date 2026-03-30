@@ -94,16 +94,32 @@ export interface Settings {
   patronAr: number
   csereMinimum: number
   emailErtesites: boolean
+  szamlaszam: string
+  revolut: string
+}
+
+// Több lehetséges kulcsnevet próbál ki
+function pick(map: Record<string, string>, ...keys: string[]): string {
+  for (const k of keys) {
+    const v = map[k] ?? map[k.toLowerCase()] ?? map[k.toUpperCase()]
+    if (v && v.trim()) return v.trim()
+  }
+  return ''
 }
 
 export async function getSettings(): Promise<Settings> {
   return getCached('beallitasok', TTL, async () => {
-    const rows = await getSheetValues('Beállítások!A2:B')
+    const [rows, directCells] = await Promise.all([
+      getSheetValues('Beállítások!A2:B'),
+      getSheetValues('Beállítások!B8:B9'),
+    ])
     const map = Object.fromEntries(rows.map(r => [r[0], r[1]]))
     return {
       patronAr: parseInt(map['patron_ar'] ?? '1900'),
       csereMinimum: parseInt(map['csere_minimum'] ?? '4'),
       emailErtesites: map['email_ertesites']?.toUpperCase() !== 'FALSE',
+      szamlaszam: directCells[0]?.[0]?.trim() || pick(map, 'szamlaszam', 'szamla_szam', 'bankszamla', 'bank_szamla', 'szamla'),
+      revolut: directCells[1]?.[0]?.trim() || pick(map, 'revolut', 'revolut_id', 'revolut_azonosito', 'revolut_tag'),
     }
   })
 }
@@ -345,6 +361,8 @@ export interface DashboardData {
   patronPrice: number
   csereMinimum: number
   csereSuggestions: CsereSuggestion[]
+  szamlaszam: string
+  revolut: string
 }
 
 export async function getDashboardData(email: string): Promise<DashboardData> {
@@ -367,5 +385,7 @@ export async function getDashboardData(email: string): Promise<DashboardData> {
     patronPrice: settings.patronAr,
     csereMinimum: settings.csereMinimum,
     csereSuggestions,
+    szamlaszam: settings.szamlaszam,
+    revolut: settings.revolut,
   }
 }
