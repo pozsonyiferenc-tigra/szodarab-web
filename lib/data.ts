@@ -109,17 +109,15 @@ function pick(map: Record<string, string>, ...keys: string[]): string {
 
 export async function getSettings(): Promise<Settings> {
   return getCached('beallitasok', TTL, async () => {
-    const [rows, directCells] = await Promise.all([
-      getSheetValues('Beállítások!A2:B'),
-      getSheetValues('Beállítások!B8:B9'),
-    ])
+    const rows = await getSheetValues('Beállítások!A2:B')
     const map = Object.fromEntries(rows.map(r => [r[0], r[1]]))
+    // B8 = rows[6][1], B9 = rows[7][1] (A2:B → 0-indexed, row 8 = index 6)
     return {
       patronAr: parseInt(map['patron_ar'] ?? '1900'),
       csereMinimum: parseInt(map['csere_minimum'] ?? '4'),
       emailErtesites: map['email_ertesites']?.toUpperCase() !== 'FALSE',
-      szamlaszam: directCells[0]?.[0]?.trim() || pick(map, 'szamlaszam', 'szamla_szam', 'bankszamla', 'bank_szamla', 'szamla'),
-      revolut: directCells[1]?.[0]?.trim() || pick(map, 'revolut', 'revolut_id', 'revolut_azonosito', 'revolut_tag'),
+      szamlaszam: rows[6]?.[1]?.trim() || pick(map, 'szamlaszam', 'szamla_szam', 'bankszamla', 'bank_szamla', 'szamla'),
+      revolut: rows[7]?.[1]?.trim() || pick(map, 'revolut', 'revolut_id', 'revolut_azonosito', 'revolut_tag'),
     }
   })
 }
