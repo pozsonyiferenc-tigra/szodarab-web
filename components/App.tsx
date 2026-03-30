@@ -197,7 +197,6 @@ export default function App() {
 
   return (
     <>
-      <BgCylinders />
       <div className="app-shell">
         <header className="app-header">
           <div className={`app-header-inner${page !== 'dashboard' ? ' subpage' : ''}`}>
