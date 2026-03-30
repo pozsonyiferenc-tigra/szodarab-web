@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useUser } from '@clerk/nextjs'
 import Dashboard from './Dashboard'
 import Behozas from './Behozas'
 import Elvitel from './Elvitel'
@@ -18,6 +17,7 @@ export interface DashboardData {
   userName: string
   userEmail: string
   isAdmin: boolean
+  tema: 'dark' | 'light'
   balance: { kekPatron: number; rozsaszinPatron: number; penz: number }
   stock: { kekUres: number; kekTele: number; rozsaszinUres: number; rozsaszinTele: number }
   patronPrice: number
@@ -35,26 +35,9 @@ const PAGE_TITLES: Record<Page, string> = {
   csere: 'Csere',
 }
 
-/* ── Theme hook – localStorage per user ── */
-function useTheme(userId: string | undefined) {
-  const key = userId ? `szoda-theme-${userId}` : 'szoda-theme'
-  const [theme, setThemeState] = useState<'dark' | 'light'>('dark')
-
-  useEffect(() => {
-    const stored = localStorage.getItem(key) as 'dark' | 'light' | null
-    const t = stored ?? 'dark'
-    setThemeState(t)
-    document.documentElement.setAttribute('data-theme', t)
-  }, [key])
-
-  const toggleTheme = () => {
-    const next = theme === 'dark' ? 'light' : 'dark'
-    setThemeState(next)
-    localStorage.setItem(key, next)
-    document.documentElement.setAttribute('data-theme', next)
-  }
-
-  return { theme, toggleTheme }
+/* ── Theme – Google Sheets-ből töltve, API-n mentve ── */
+function applyTheme(t: 'dark' | 'light') {
+  document.documentElement.setAttribute('data-theme', t)
 }
 
 /* ── Cylinder SVG background decorations ── */
@@ -114,9 +97,7 @@ function BgCylinders() {
 }
 
 export default function App() {
-  const { user } = useUser()
-  const { theme, toggleTheme } = useTheme(user?.id)
-
+  const [theme, setThemeState] = useState<'dark' | 'light'>('dark')
   const [page, setPage] = useState<Page>('dashboard')
   const [data, setData] = useState<DashboardData | null>(null)
   const [authState, setAuthState] = useState<AuthState>('loading')
@@ -135,8 +116,13 @@ export default function App() {
     try {
       const res = await fetch('/api/dashboard')
       if (res.ok) {
-        setData(await res.json())
+        const json: DashboardData = await res.json()
+        setData(json)
         setAuthState('ok')
+        // Téma alkalmazása a Sheetsből jövő érték alapján
+        const t = json.tema ?? 'dark'
+        setThemeState(t)
+        applyTheme(t)
       } else {
         const body = await res.json()
         if (res.status === 403) {
@@ -184,6 +170,28 @@ export default function App() {
       setLoading(false)
     }
   }
+
+  const toggleTheme = useCallback(async () => {
+    const next = theme === 'dark' ? 'light' : 'dark'
+    // Azonnali UI frissítés (optimistic)
+    setThemeState(next)
+    applyTheme(next)
+    // Mentés Google Sheetsbe
+    try {
+      await fetch('/api/theme', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tema: next }),
+      })
+      // Cache invalidálás hogy a következő betöltés friss értéket kapjon
+      if (data) setData({ ...data, tema: next })
+    } catch {
+      // Hiba esetén visszaállítjuk
+      setThemeState(theme)
+      applyTheme(theme)
+      showToast('Témaváltás mentése sikertelen', 'error')
+    }
+  }, [theme, data, showToast])
 
   const themeIcon = theme === 'dark' ? '☀️' : '🌙'
 

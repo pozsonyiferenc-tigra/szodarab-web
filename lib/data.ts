@@ -11,19 +11,29 @@ export interface Tag {
   aktiv: boolean
   szerep: string
   csereErtesites: boolean
+  tema: 'dark' | 'light'
 }
 
 export async function getTags(): Promise<Tag[]> {
   return getCached('tagok', TTL, async () => {
-    const rows = await getSheetValues('Tagok!A2:E')
+    const rows = await getSheetValues('Tagok!A2:F')
     return rows.map(r => ({
       nev: r[0] ?? '',
       email: (r[1] ?? '').toLowerCase().trim(),
       aktiv: r[2]?.toString().toUpperCase() === 'TRUE',
       szerep: r[3] ?? 'tag',
       csereErtesites: r[4]?.toString().toUpperCase() === 'TRUE',
+      tema: (r[5] === 'light' ? 'light' : 'dark') as 'dark' | 'light',
     }))
   })
+}
+
+export async function setUserTheme(email: string, tema: 'dark' | 'light'): Promise<void> {
+  const rows = await getSheetWithRowNumbers('Tagok!A2:F')
+  const found = rows.find(r => r.values[1]?.toLowerCase().trim() === email.toLowerCase().trim())
+  if (!found) return
+  await updateCell('Tagok', found.row, 6, tema) // F oszlop = 6
+  invalidate('tagok')
 }
 
 export async function getTag(email: string): Promise<Tag | undefined> {
@@ -329,6 +339,7 @@ export interface DashboardData {
   userName: string
   userEmail: string
   isAdmin: boolean
+  tema: 'dark' | 'light'
   balance: Balance
   stock: Stock
   patronPrice: number
@@ -337,8 +348,8 @@ export interface DashboardData {
 }
 
 export async function getDashboardData(email: string): Promise<DashboardData> {
-  const [userName, adminCheck, balance, stock, settings, csereSuggestions] = await Promise.all([
-    getUserName(email),
+  const [tag, adminCheck, balance, stock, settings, csereSuggestions] = await Promise.all([
+    getTag(email),
     isAdmin(email),
     getUserBalance(email),
     getStock(),
@@ -347,9 +358,10 @@ export async function getDashboardData(email: string): Promise<DashboardData> {
   ])
 
   return {
-    userName,
+    userName: tag?.nev ?? email.split('@')[0],
     userEmail: email,
     isAdmin: adminCheck,
+    tema: tag?.tema ?? 'dark',
     balance,
     stock,
     patronPrice: settings.patronAr,
