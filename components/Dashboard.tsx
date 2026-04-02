@@ -45,6 +45,8 @@ interface Props {
   data: DashboardData | null
   onNavigate: (p: Page) => void
   onRefresh: () => void
+  proxyEmail: string | null
+  onProxyChange: (email: string | null) => void
 }
 
 function usePendingUsers(isAdmin: boolean) {
@@ -73,7 +75,7 @@ function usePendingUsers(isAdmin: boolean) {
   return { pending, approve, approving }
 }
 
-export default function Dashboard({ data, onNavigate, onRefresh }: Props) {
+export default function Dashboard({ data, onNavigate, onRefresh, proxyEmail, onProxyChange }: Props) {
   const { user } = useUser()
 
   if (!data) {
@@ -189,9 +191,31 @@ export default function Dashboard({ data, onNavigate, onRefresh }: Props) {
         </div>
       </div>
 
-      {/* Admin szekció – csere javaslatok + gomb + jóváhagyások */}
+      {/* Proxy banner – ha admin más nevében jár el */}
+      {proxyEmail && (
+        <div className="proxy-banner">
+          👤 Más nevében jársz el: <strong>{data.userName}</strong>
+        </div>
+      )}
+
+      {/* Admin szekció – más nevében + csere javaslatok + gomb + jóváhagyások */}
       {data.isAdmin && (
         <>
+          {/* Proxy választó */}
+          <div className="card">
+            <div className="card-title">Más nevében</div>
+            <select
+              className="input-field"
+              value={proxyEmail ?? ''}
+              onChange={e => onProxyChange(e.target.value || null)}
+            >
+              <option value="">— Saját nevemben —</option>
+              {data.adminUsers?.map(u => (
+                <option key={u.email} value={u.email}>{u.nev}</option>
+              ))}
+            </select>
+          </div>
+
           {data.csereSuggestions.map((s, i) => (
             <div key={i} className={`suggestion ${s.csereelheto ? 'ready' : 'waiting'}`}>
               {s.csereelheto ? '✅ ' : '⏳ '}{s.uzenet}

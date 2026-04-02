@@ -25,6 +25,7 @@ export interface DashboardData {
   csereSuggestions: Array<{ tipus: string; uzenet: string; mennyiseg: number; csereelheto: boolean }>
   szamlaszam: string
   revolut: string
+  adminUsers?: Array<{ nev: string; email: string }>
 }
 
 export interface ToastMsg { id: number; text: string; type: 'success' | 'error' }
@@ -112,6 +113,7 @@ export default function App() {
   const [authMeta, setAuthMeta] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(false)
   const [toasts, setToasts] = useState<ToastMsg[]>([])
+  const [proxyEmail, setProxyEmail] = useState<string | null>(null)
 
   const showToast = useCallback((text: string, type: 'success' | 'error' = 'success') => {
     const id = Date.now()
@@ -122,16 +124,21 @@ export default function App() {
   const loadDashboard = useCallback(async (silent = false) => {
     if (!silent) setLoading(true)
     try {
-      const res = await fetch('/api/dashboard')
+      const url = proxyEmail
+        ? `/api/dashboard?proxyEmail=${encodeURIComponent(proxyEmail)}`
+        : '/api/dashboard'
+      const res = await fetch(url)
       if (res.ok) {
         const json: DashboardData = await res.json()
         setData(json)
         setAuthState('ok')
-        // Téma alkalmazása a Sheetsből jövő érték alapján
-        const t = json.tema ?? 'dark'
-        setThemeState(t)
-        applyTheme(t)
-        localStorage.setItem('szoda-theme-hint', t)
+        // Proxy módban NEM alkalmazzuk a tag témáját
+        if (!proxyEmail) {
+          const t = json.tema ?? 'dark'
+          setThemeState(t)
+          applyTheme(t)
+          localStorage.setItem('szoda-theme-hint', t)
+        }
       } else {
         const body = await res.json()
         if (res.status === 403) {
@@ -153,17 +160,18 @@ export default function App() {
     } finally {
       if (!silent) setLoading(false)
     }
-  }, [showToast])
+  }, [showToast, proxyEmail])
 
   useEffect(() => { loadDashboard() }, [loadDashboard])
 
   const submitTransaction = async (txData: Record<string, unknown>) => {
     setLoading(true)
     try {
+      const payload = proxyEmail ? { ...txData, targetEmail: proxyEmail } : txData
       const res = await fetch('/api/transactions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(txData),
+        body: JSON.stringify(payload),
       })
       const result = await res.json()
       if (result.success) {
@@ -245,7 +253,7 @@ export default function App() {
           {authState === 'pending'        && <PendingApproval nev={authMeta.nev ?? ''} />}
           {authState === 'ok' && (
             <>
-              {page === 'dashboard' && <Dashboard data={data} onNavigate={setPage} onRefresh={() => loadDashboard(true)} />}
+              {page === 'dashboard' && <Dashboard data={data} onNavigate={setPage} onRefresh={() => loadDashboard(true)} proxyEmail={proxyEmail} onProxyChange={setProxyEmail} />}
               {page === 'behozas'   && data && <Behozas   data={data} onSubmit={submitTransaction} />}
               {page === 'elvitel'   && data && <Elvitel   data={data} onSubmit={submitTransaction} />}
               {page === 'befizetes' && data && <Befizetes data={data} onSubmit={submitTransaction} />}
