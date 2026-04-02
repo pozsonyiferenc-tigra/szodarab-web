@@ -8,6 +8,7 @@ const TTL = 5 * 60 * 1000 // 5 perc
 export interface Tag {
   nev: string
   email: string
+  email2: string
   aktiv: boolean
   szerep: string
   csereErtesites: boolean
@@ -16,7 +17,7 @@ export interface Tag {
 
 export async function getTags(): Promise<Tag[]> {
   return getCached('tagok', TTL, async () => {
-    const rows = await getSheetValues('Tagok!A2:F')
+    const rows = await getSheetValues('Tagok!A2:G')
     return rows.map(r => ({
       nev: r[0] ?? '',
       email: (r[1] ?? '').toLowerCase().trim(),
@@ -24,13 +25,18 @@ export async function getTags(): Promise<Tag[]> {
       szerep: r[3] ?? 'tag',
       csereErtesites: r[4]?.toString().toUpperCase() === 'TRUE',
       tema: (r[5] === 'light' ? 'light' : 'dark') as 'dark' | 'light',
+      email2: (r[6] ?? '').toLowerCase().trim(),
     }))
   })
 }
 
 export async function setUserTheme(email: string, tema: 'dark' | 'light'): Promise<void> {
-  const rows = await getSheetWithRowNumbers('Tagok!A2:F')
-  const found = rows.find(r => r.values[1]?.toLowerCase().trim() === email.toLowerCase().trim())
+  const rows = await getSheetWithRowNumbers('Tagok!A2:G')
+  const norm = email.toLowerCase().trim()
+  const found = rows.find(r =>
+    r.values[1]?.toLowerCase().trim() === norm ||
+    (r.values[6]?.toLowerCase().trim() || '') === norm && norm !== ''
+  )
   if (!found) return
   await updateCell('Tagok', found.row, 6, tema) // F oszlop = 6
   invalidate('tagok')
@@ -38,7 +44,8 @@ export async function setUserTheme(email: string, tema: 'dark' | 'light'): Promi
 
 export async function getTag(email: string): Promise<Tag | undefined> {
   const tags = await getTags()
-  return tags.find(t => t.email === email.toLowerCase().trim())
+  const norm = email.toLowerCase().trim()
+  return tags.find(t => t.email === norm || (t.email2 !== '' && t.email2 === norm))
 }
 
 export async function isAuthorizedUser(email: string): Promise<boolean> {
@@ -63,7 +70,8 @@ export async function getNotificationEmails(): Promise<string[]> {
 
 export async function registerUser(email: string, nev: string): Promise<{ success: boolean; message: string; alreadyExists?: boolean }> {
   const tags = await getTags()
-  const existing = tags.find(t => t.email === email.toLowerCase().trim())
+  const norm = email.toLowerCase().trim()
+  const existing = tags.find(t => t.email === norm || (t.email2 !== '' && t.email2 === norm))
   if (existing) {
     return { success: false, message: 'Ez az email már szerepel a rendszerben.', alreadyExists: true }
   }
@@ -80,8 +88,12 @@ export async function getPendingUsers(): Promise<{ row: number; nev: string; ema
 }
 
 export async function approveUser(email: string): Promise<{ success: boolean; message: string }> {
-  const rows = await getSheetWithRowNumbers('Tagok!A2:E')
-  const found = rows.find(r => r.values[1]?.toLowerCase().trim() === email.toLowerCase().trim())
+  const rows = await getSheetWithRowNumbers('Tagok!A2:G')
+  const norm = email.toLowerCase().trim()
+  const found = rows.find(r =>
+    r.values[1]?.toLowerCase().trim() === norm ||
+    (r.values[6]?.toLowerCase().trim() || '') === norm && norm !== ''
+  )
   if (!found) return { success: false, message: 'Felhasználó nem található.' }
   await updateCell('Tagok', found.row, 3, 'TRUE') // col C = aktiv
   invalidate('tagok')
