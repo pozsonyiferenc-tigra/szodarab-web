@@ -277,9 +277,18 @@ input, textarea { font-family: inherit; }
 .app-logo .blue { color: var(--blue); }
 .app-logo .pink { color: var(--pink); }
 
-/* Subpage header */
+/* Subpage header: 3 oszlopos grid – vissza | cím | téma */
 .app-header-inner.subpage {
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+}
+.app-header-inner.subpage .page-title {
+  text-align: center;
+}
+.app-header-inner.subpage .btn-theme {
+  position: static;
+  justify-self: end;
 }
 
 .app-main {
