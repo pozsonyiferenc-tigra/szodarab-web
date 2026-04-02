@@ -119,8 +119,35 @@
 [data-theme="light"] .stock-row { background: rgba(0,0,0,0.03); }
 [data-theme="light"] .input-field { background: rgba(0,0,0,0.04); color: var(--text); border-color: rgba(0,0,0,0.12); }
 [data-theme="light"] .input-field:focus { background: white; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(0,120,204,.12); }
-[data-theme="light"] .quick-btn { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.10); color: var(--text-2); }
-[data-theme="light"] .type-btn  { background: rgba(255,255,255,0.85); border-color: rgba(0,0,0,0.12); }
+[data-theme="light"] .quick-btn { background: white; border-color: rgba(0,0,0,0.14); color: var(--text-2); box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+[data-theme="light"] .quick-btn.active { background: var(--blue); border-color: var(--blue); color: white; box-shadow: 0 3px 10px rgba(0,120,204,.30); }
+
+[data-theme="light"] .type-btn {
+  background: white;
+  border-color: rgba(0,0,0,0.14);
+  color: var(--text-2);
+  box-shadow: 0 1px 4px rgba(0,0,0,.07);
+}
+[data-theme="light"] .type-btn.active-blue {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: white;
+  box-shadow: 0 4px 14px rgba(0,120,204,.30);
+}
+[data-theme="light"] .type-btn.active-pink {
+  background: var(--pink);
+  border-color: var(--pink);
+  color: white;
+  box-shadow: 0 4px 14px rgba(214,0,110,.30);
+}
+[data-theme="light"] .type-btn.active-blue .radio-circle,
+[data-theme="light"] .type-btn.active-pink .radio-circle { border-color: rgba(255,255,255,.7); }
+[data-theme="light"] .type-btn.active-blue .radio-dot,
+[data-theme="light"] .type-btn.active-pink .radio-dot   { background: white; }
+[data-theme="light"] .radio-circle { border-color: rgba(0,0,0,.22); }
+
+[data-theme="light"] .counter-btn { box-shadow: 0 4px 14px rgba(0,120,204,.22); }
+[data-theme="light"] .counter-btn:disabled { opacity: .25; box-shadow: none; }
 
 [data-theme="light"] .loading-box { background: rgba(240,244,255,0.97); border-color: rgba(0,0,0,0.08); }
 [data-theme="light"] .toast.success { background: rgba(15,17,32,0.92); }
