@@ -284,9 +284,9 @@ export default function Dashboard({ data, onNavigate, onRefresh, proxyEmail, onP
         </>
       )}
 
-      {/* Verziószám – alkalmazásból ellenőrizhető (forrás: App.tsx) */}
+      {/* Verzió – automatikus: build dátuma + git commit SHA (alkalmazásból ellenőrizhető) */}
       <div style={{ textAlign: 'center', fontSize: 11, opacity: 0.4, marginTop: 8, letterSpacing: '.03em' }}>
-        Szódarab v{APP_VERSION} · {APP_DATE}
+        Szódarab · {APP_DATE} · {APP_VERSION}
       </div>
     </div>
   )

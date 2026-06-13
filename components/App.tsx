@@ -1,7 +1,8 @@
 // ════════════════════════════════════════════════════════════
-//  Szódarab · v1.0.0 · 2026-06-13
-//  Verzió-forrás: kiadáskor itt frissítsd (APP_VERSION + APP_DATE).
-//  Ugyanez jelenik meg a Dashboard alján (alkalmazásból ellenőrizhető).
+//  Szódarab – verziókövetés
+//  A verzió = build dátuma (Europe/Budapest) + git commit rövid SHA.
+//  Mindkettő AUTOMATIKUSAN generálódik build-időben (lásd next.config.ts),
+//  itt nincs mit átírni. Megjelenik az alkalmazás alján (Dashboard).
 // ════════════════════════════════════════════════════════════
 'use client'
 
@@ -16,9 +17,9 @@ import Loading from './Loading'
 import Toast from './Toast'
 import { NotRegistered, PendingApproval } from './Unauthorized'
 
-/** Alkalmazás verziószáma és kiadás dátuma – egyetlen igazságforrás */
-export const APP_VERSION = '1.0.0'
-export const APP_DATE = '2026-06-13'
+/** Verzió-infó – build-időben inline-olt értékek (next.config.ts) */
+export const APP_DATE = process.env.NEXT_PUBLIC_BUILD_DATE || ''
+export const APP_VERSION = process.env.NEXT_PUBLIC_BUILD_SHA || 'helyi'
 
 export type Page = 'dashboard' | 'behozas' | 'elvitel' | 'csere' | 'befizetes' | 'toltes'
 export type AuthState = 'loading' | 'ok' | 'not_registered' | 'pending'
