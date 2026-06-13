@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { DashboardData, Page } from './App'
+import { DashboardData, Page, APP_VERSION, APP_DATE } from './App'
 import { useUser } from '@clerk/nextjs'
 
 function formatMoney(n: number) {
@@ -283,6 +283,11 @@ export default function Dashboard({ data, onNavigate, onRefresh, proxyEmail, onP
           )}
         </>
       )}
+
+      {/* Verziószám – alkalmazásból ellenőrizhető (forrás: App.tsx) */}
+      <div style={{ textAlign: 'center', fontSize: 11, opacity: 0.4, marginTop: 8, letterSpacing: '.03em' }}>
+        Szódarab v{APP_VERSION} · {APP_DATE}
+      </div>
     </div>
   )
 }

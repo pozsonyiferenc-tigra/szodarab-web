@@ -1,3 +1,8 @@
+// ════════════════════════════════════════════════════════════
+//  Szódarab · v1.0.0 · 2026-06-13
+//  Verzió-forrás: kiadáskor itt frissítsd (APP_VERSION + APP_DATE).
+//  Ugyanez jelenik meg a Dashboard alján (alkalmazásból ellenőrizhető).
+// ════════════════════════════════════════════════════════════
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
@@ -10,6 +15,10 @@ import Toltes from './Toltes'
 import Loading from './Loading'
 import Toast from './Toast'
 import { NotRegistered, PendingApproval } from './Unauthorized'
+
+/** Alkalmazás verziószáma és kiadás dátuma – egyetlen igazságforrás */
+export const APP_VERSION = '1.0.0'
+export const APP_DATE = '2026-06-13'
 
 export type Page = 'dashboard' | 'behozas' | 'elvitel' | 'csere' | 'befizetes' | 'toltes'
 export type AuthState = 'loading' | 'ok' | 'not_registered' | 'pending'
