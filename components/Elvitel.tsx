@@ -18,7 +18,10 @@ export default function Elvitel({ data, onSubmit }: Props) {
   const [quantity, setQuantity] = useState(1)
   const [type, setType] = useState<'kek' | 'rozsaszin'>('kek')
 
-  const maxQty = type === 'kek' ? data.balance.kekPatron : data.balance.rozsaszinPatron
+  // Elvihető: leadott üres (H) + neki kiosztott teli (J)
+  const maxQty = type === 'kek'
+    ? data.balance.kekPatron + data.balance.kekTeli
+    : data.balance.rozsaszinPatron + data.balance.rozsaszinTeli
   const fizetendo = quantity * data.patronPrice
 
   const submit = () => {
@@ -43,16 +46,19 @@ export default function Elvitel({ data, onSubmit }: Props) {
         <div style={{ display: 'flex', gap: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <div className="dot dot-blue" />
-            <span style={{ fontSize: 14, fontWeight: 600 }}>{data.balance.kekPatron} db kék</span>
+            <span style={{ fontSize: 14, fontWeight: 600 }}>{data.balance.kekPatron + data.balance.kekTeli} db kék</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <div className="dot dot-pink" />
-            <span style={{ fontSize: 14, fontWeight: 600 }}>{data.balance.rozsaszinPatron} db rózsaszín</span>
+            <span style={{ fontSize: 14, fontWeight: 600 }}>{data.balance.rozsaszinPatron + data.balance.rozsaszinTeli} db rózsaszín</span>
           </div>
+        </div>
+        <div style={{ marginTop: 6, fontSize: 11, opacity: 0.6 }}>
+          Leadott üres + kiosztott teli patronok – ennyi elvihető
         </div>
         {maxQty === 0 && (
           <div style={{ marginTop: 8, fontSize: 13, fontWeight: 600 }}>
-            ⚠️ Nincs elegendő {type === 'kek' ? 'kék' : 'rózsaszín'} patron egyenleged!
+            ⚠️ Nincs elvihető {type === 'kek' ? 'kék' : 'rózsaszín'} patronod!
           </div>
         )}
       </div>

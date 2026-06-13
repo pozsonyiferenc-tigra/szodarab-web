@@ -307,17 +307,25 @@ input, textarea { font-family: inherit; }
 .btn-back {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 7px 14px;
+  gap: 5px;
+  padding: 5px 10px;
+  width: fit-content;
   background: rgba(255,255,255,0.08);
   border: 1px solid rgba(255,255,255,0.12);
   border-radius: 50px;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   color: rgba(255,255,255,0.7);
   transition: all .15s;
+  white-space: nowrap;
 }
 .btn-back:active { transform: scale(.96); background: rgba(255,255,255,0.14); }
+[data-theme="light"] .btn-back {
+  background: rgba(0,0,0,0.05);
+  border-color: rgba(0,0,0,0.14);
+  color: var(--text-2);
+}
+[data-theme="light"] .btn-back:active { background: rgba(0,0,0,0.10); }
 
 /* LOGO ------------------------------------------------ */
 .app-logo-img {
@@ -831,6 +839,11 @@ textarea.input-field { resize: none; }
   font-size: 13px;
   color: #FFD760;
   font-weight: 500;
+}
+[data-theme="light"] .warn-box {
+  background: rgba(204,136,0,0.08);
+  border-color: rgba(204,136,0,0.25);
+  color: #5C3800;
 }
 
 /* THEME TOGGLE BUTTON --------------------------------- */

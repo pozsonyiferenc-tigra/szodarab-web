@@ -6,11 +6,12 @@ import Behozas from './Behozas'
 import Elvitel from './Elvitel'
 import Befizetes from './Befizetes'
 import Csere from './Csere'
+import Toltes from './Toltes'
 import Loading from './Loading'
 import Toast from './Toast'
 import { NotRegistered, PendingApproval } from './Unauthorized'
 
-export type Page = 'dashboard' | 'behozas' | 'elvitel' | 'befizetes' | 'csere'
+export type Page = 'dashboard' | 'behozas' | 'elvitel' | 'csere' | 'befizetes' | 'toltes'
 export type AuthState = 'loading' | 'ok' | 'not_registered' | 'pending'
 
 export interface DashboardData {
@@ -18,7 +19,7 @@ export interface DashboardData {
   userEmail: string
   isAdmin: boolean
   tema: 'dark' | 'light'
-  balance: { kekPatron: number; rozsaszinPatron: number; penz: number }
+  balance: { kekPatron: number; rozsaszinPatron: number; kekTeli: number; rozsaszinTeli: number; penz: number }
   stock: { kekUres: number; kekTele: number; rozsaszinUres: number; rozsaszinTele: number }
   patronPrice: number
   csereMinimum: number
@@ -32,10 +33,11 @@ export interface ToastMsg { id: number; text: string; type: 'success' | 'error' 
 
 const PAGE_TITLES: Record<Page, string> = {
   dashboard: '',
-  behozas: 'Üres behozás',
-  elvitel: 'Teli elvitel',
+  behozas:   'Üres behozás',
+  elvitel:   'Teli elvitel',
+  csere:     'Csere',
   befizetes: 'Befizetés',
-  csere: 'Csere',
+  toltes:    'Töltetés',
 }
 
 /* ── Theme – Google Sheets-ből töltve, API-n mentve ── */
@@ -258,6 +260,7 @@ export default function App() {
               {page === 'elvitel'   && data && <Elvitel   data={data} onSubmit={submitTransaction} />}
               {page === 'befizetes' && data && <Befizetes data={data} onSubmit={submitTransaction} />}
               {page === 'csere'     && data && <Csere     data={data} onSubmit={submitTransaction} />}
+              {page === 'toltes'    && data && <Toltes    data={data} onSubmit={submitTransaction} />}
             </>
           )}
         </main>

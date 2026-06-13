@@ -1,6 +1,7 @@
 import { auth, currentUser } from '@clerk/nextjs/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { getPendingUsers, approveUser, isAdmin } from '@/lib/data'
+import { writeLogAsync } from '@/lib/log'
 
 export async function GET() {
   const { userId } = await auth()
@@ -31,5 +32,8 @@ export async function POST(request: NextRequest) {
   if (!targetEmail) return NextResponse.json({ error: 'Email szükséges' }, { status: 400 })
 
   const result = await approveUser(targetEmail)
+  if (result.success) {
+    writeLogAsync('Felhasználó jóváhagyása', email, targetEmail, `${targetEmail} aktiválva`)
+  }
   return NextResponse.json(result, { status: result.success ? 200 : 400 })
 }

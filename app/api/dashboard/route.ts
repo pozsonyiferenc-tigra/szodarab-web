@@ -1,8 +1,8 @@
 import { auth, currentUser } from '@clerk/nextjs/server'
-import { NextResponse } from 'next/server'
-import { getDashboardData, getTag } from '@/lib/data'
+import { NextRequest, NextResponse } from 'next/server'
+import { getDashboardData, getTag, isAdmin, getTags } from '@/lib/data'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const { userId } = await auth()
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
@@ -17,6 +17,20 @@ export async function GET() {
   }
   if (!tag.aktiv) {
     return NextResponse.json({ error: 'pending', nev: tag.nev }, { status: 403 })
+  }
+
+  const proxyEmail = request.nextUrl.searchParams.get('proxyEmail')
+
+  if (proxyEmail && await isAdmin(email)) {
+    const [proxyData, adminUsers] = await Promise.all([
+      getDashboardData(proxyEmail),
+      getTags().then(tags => tags.filter(t => t.aktiv).map(t => ({ nev: t.nev, email: t.email }))),
+    ])
+    // Admin témája és jogosultsága marad, a proxy user adatai jelennek meg
+    proxyData.tema = tag.tema
+    proxyData.isAdmin = true
+    proxyData.adminUsers = adminUsers
+    return NextResponse.json(proxyData)
   }
 
   const data = await getDashboardData(email)

@@ -46,6 +46,24 @@ export async function updateCell(sheetName: string, row: number, col: number, va
   })
 }
 
+/** Egy sor több cellájának egyszerre való frissítése (pl. H5:L5) */
+export async function updateRowCells(
+  sheetName: string,
+  row: number,
+  startCol: number,
+  values: (string | number)[],
+): Promise<void> {
+  const sheets = getSheetsClient()
+  const s = String.fromCharCode(64 + startCol)
+  const e = String.fromCharCode(64 + startCol + values.length - 1)
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: SPREADSHEET_ID,
+    range: `${sheetName}!${s}${row}:${e}${row}`,
+    valueInputOption: 'USER_ENTERED',
+    requestBody: { values: [values] },
+  })
+}
+
 export async function getSheetWithRowNumbers(range: string): Promise<{ row: number; values: string[] }[]> {
   const rows = await getSheetValues(range)
   const startRow = parseInt(range.split('A')[1]?.split(':')[0] ?? '2')

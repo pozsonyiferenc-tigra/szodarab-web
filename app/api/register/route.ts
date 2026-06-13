@@ -1,6 +1,7 @@
 import { auth, currentUser } from '@clerk/nextjs/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { registerUser, getTag } from '@/lib/data'
+import { writeLogAsync } from '@/lib/log'
 
 export async function POST(request: NextRequest) {
   const { userId } = await auth()
@@ -18,5 +19,8 @@ export async function POST(request: NextRequest) {
   if (!nev) return NextResponse.json({ error: 'Adj meg nevet!' }, { status: 400 })
 
   const result = await registerUser(email, nev)
+  if (result.success) {
+    writeLogAsync('Regisztráció', email, email, `${nev} (${email}) regisztrált, jóváhagyásra vár`)
+  }
   return NextResponse.json(result, { status: result.success ? 200 : 400 })
 }

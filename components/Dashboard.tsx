@@ -77,6 +77,7 @@ function usePendingUsers(isAdmin: boolean) {
 
 export default function Dashboard({ data, onNavigate, onRefresh, proxyEmail, onProxyChange }: Props) {
   const { user } = useUser()
+  const { pending, approve, approving } = usePendingUsers(data?.isAdmin ?? false)
 
   if (!data) {
     return (
@@ -88,8 +89,6 @@ export default function Dashboard({ data, onNavigate, onRefresh, proxyEmail, onP
       </div>
     )
   }
-
-  const { pending, approve, approving } = usePendingUsers(data.isAdmin)
 
   const penzNegativ = data.balance.penz < 0
   const penzNagyon  = data.balance.penz < -5000
@@ -116,19 +115,44 @@ export default function Dashboard({ data, onNavigate, onRefresh, proxyEmail, onP
       {/* Patron egyenleg */}
       <div className="card">
         <div className="card-title">Patron egyenleged</div>
+
+        {/* Fejléc sorok */}
+        <div className="patron-row" style={{ opacity: 0.5, fontSize: 11, paddingBottom: 2 }}>
+          <div className="patron-label" />
+          <div style={{ display: 'flex', gap: 24, justifyContent: 'flex-end', minWidth: 120 }}>
+            <span style={{ width: 48, textAlign: 'center' }} title="Leadott üres – ennyi teli elvihető">Üres</span>
+            <span style={{ width: 48, textAlign: 'center' }} title="Proxy töltetéssel előre allokált teli">Teli</span>
+          </div>
+        </div>
+
         <div className="patron-row">
           <div className="patron-label">
             <div className="dot dot-blue" />
             Kék patron
           </div>
-          <div className="patron-value">{data.balance.kekPatron} db</div>
+          <div style={{ display: 'flex', gap: 24, justifyContent: 'flex-end', minWidth: 120 }}>
+            <span className="patron-value" style={{ width: 48, textAlign: 'center', opacity: data.balance.kekPatron > 0 ? 1 : 0.35 }}>
+              {data.balance.kekPatron} db
+            </span>
+            <span className="patron-value" style={{ width: 48, textAlign: 'center', opacity: data.balance.kekTeli > 0 ? 1 : 0.35 }}>
+              {data.balance.kekTeli} db
+            </span>
+          </div>
         </div>
+
         <div className="patron-row">
           <div className="patron-label">
             <div className="dot dot-pink" />
             Rózsaszín patron
           </div>
-          <div className="patron-value">{data.balance.rozsaszinPatron} db</div>
+          <div style={{ display: 'flex', gap: 24, justifyContent: 'flex-end', minWidth: 120 }}>
+            <span className="patron-value" style={{ width: 48, textAlign: 'center', opacity: data.balance.rozsaszinPatron > 0 ? 1 : 0.35 }}>
+              {data.balance.rozsaszinPatron} db
+            </span>
+            <span className="patron-value" style={{ width: 48, textAlign: 'center', opacity: data.balance.rozsaszinTeli > 0 ? 1 : 0.35 }}>
+              {data.balance.rozsaszinTeli} db
+            </span>
+          </div>
         </div>
       </div>
 
@@ -149,6 +173,15 @@ export default function Dashboard({ data, onNavigate, onRefresh, proxyEmail, onP
           <div className="action-desc">Tele patron elvitele</div>
         </button>
       </div>
+
+      {/* Csere gomb – üres be + teli el egyszerre */}
+      <button
+        className="btn-primary btn-blue"
+        style={{ width: '100%' }}
+        onClick={() => onNavigate('csere')}
+      >
+        🔄 Csere – üres behoz &amp; teli elvisz
+      </button>
 
       {/* Pénzügyi egyenleg */}
       <div className={`balance-card ${balanceClass}`}>
@@ -198,7 +231,7 @@ export default function Dashboard({ data, onNavigate, onRefresh, proxyEmail, onP
         </div>
       )}
 
-      {/* Admin szekció – más nevében + csere javaslatok + gomb + jóváhagyások */}
+      {/* Admin szekció – más nevében + töltetési javaslatok + gomb + jóváhagyások */}
       {data.isAdmin && (
         <>
           {/* Proxy választó */}
@@ -222,8 +255,8 @@ export default function Dashboard({ data, onNavigate, onRefresh, proxyEmail, onP
             </div>
           ))}
 
-          <button className="btn-primary btn-orange" onClick={() => onNavigate('csere')}>
-            ↔️ Csere (Admin)
+          <button className="btn-primary btn-orange" onClick={() => onNavigate('toltes')}>
+            🔄 Töltetés (Admin)
           </button>
 
           {pending.length > 0 && (

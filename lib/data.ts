@@ -1,4 +1,4 @@
-import { getSheetValues, appendRow, updateCell, getSheetWithRowNumbers } from './sheets'
+import { getSheetValues, appendRow, updateCell, updateRowCells, getSheetWithRowNumbers } from './sheets'
 import { getCached, invalidate } from './cache'
 
 const TTL = 5 * 60 * 1000 // 5 perc
@@ -13,20 +13,33 @@ export interface Tag {
   szerep: string
   csereErtesites: boolean
   tema: 'dark' | 'light'
+  // Tagok H-L: aktuális készlet (közvetlen forrás)
+  uresKek:  number   // H – behozás növeli, elvitel/töltetés csökkenti (= elviteli jog)
+  uresPink: number   // I
+  teleKek:  number   // J – proxy töltetés növeli, elvitel csökkenti (= kiosztott teli)
+  telePink: number   // K
+  tartozas: number   // L – pénzügyi egyenleg (negatív = tartozás)
 }
 
 export async function getTags(): Promise<Tag[]> {
   return getCached('tagok', TTL, async () => {
-    const rows = await getSheetValues('Tagok!A2:G')
-    return rows.map(r => ({
-      nev: r[0] ?? '',
-      email: (r[1] ?? '').toLowerCase().trim(),
-      aktiv: r[2]?.toString().toUpperCase() === 'TRUE',
-      szerep: r[3] ?? 'tag',
-      csereErtesites: r[4]?.toString().toUpperCase() === 'TRUE',
-      tema: (r[5] === 'light' ? 'light' : 'dark') as 'dark' | 'light',
-      email2: (r[6] ?? '').toLowerCase().trim(),
-    }))
+    const rows = await getSheetValues('Tagok!A2:L')
+    return rows
+      .filter(r => r[1] && r[1].includes('@'))   // csak valódi felhasználó sorok
+      .map(r => ({
+        nev:           r[0] ?? '',
+        email:         (r[1] ?? '').toLowerCase().trim(),
+        aktiv:         r[2]?.toString().toUpperCase() === 'TRUE',
+        szerep:        r[3] ?? 'tag',
+        csereErtesites: r[4]?.toString().toUpperCase() === 'TRUE',
+        tema:          (r[5] === 'light' ? 'light' : 'dark') as 'dark' | 'light',
+        email2:        (r[6] ?? '').toLowerCase().trim(),
+        uresKek:       parseFloat(r[7]  ?? '0') || 0,
+        uresPink:      parseFloat(r[8]  ?? '0') || 0,
+        teleKek:       parseFloat(r[9]  ?? '0') || 0,
+        telePink:      parseFloat(r[10] ?? '0') || 0,
+        tartozas:      parseFloat(r[11] ?? '0') || 0,
+      }))
   })
 }
 
@@ -83,7 +96,8 @@ export async function registerUser(email: string, nev: string): Promise<{ succes
 export async function getPendingUsers(): Promise<{ row: number; nev: string; email: string }[]> {
   const rows = await getSheetWithRowNumbers('Tagok!A2:E')
   return rows
-    .filter(r => r.values[2]?.toString().toUpperCase() !== 'TRUE')
+    .filter(r => r.values[1]?.includes('@'))                          // speciális sorok (képletsor, alaptőke) kizárása
+    .filter(r => r.values[2]?.toString().toUpperCase() !== 'TRUE')   // még nem aktív tagok
     .map(r => ({ row: r.row, nev: r.values[0] ?? '', email: r.values[1] ?? '' }))
 }
 
@@ -166,31 +180,25 @@ export async function getTransactions(): Promise<Transaction[]> {
 // ==================== EGYENLEGEK ====================
 
 export interface Balance {
-  kekPatron: number
-  rozsaszinPatron: number
+  kekPatron: number        // H – üres leadott = elviteli jogosultság
+  rozsaszinPatron: number  // I
+  kekTeli: number          // J – proxy töltetéssel kiosztott teli (előre allokált)
+  rozsaszinTeli: number    // K
   penz: number
 }
 
 export async function getUserBalance(email: string): Promise<Balance> {
-  const [transactions, settings, userName] = await Promise.all([
-    getTransactions(),
-    getSettings(),
-    getUserName(email),
-  ])
-
-  const balance: Balance = { kekPatron: 0, rozsaszinPatron: 0, penz: 0 }
-
-  for (const t of transactions) {
-    if (t.tagNev === userName || t.tagNev === email) {
-      balance.kekPatron += t.kekUres + t.kekTele
-      balance.rozsaszinPatron += t.rozsaszinUres + t.rozsaszinTele
-      balance.penz += t.osszegFt
-      balance.penz -= Math.abs(t.kekTele) * settings.patronAr
-      balance.penz -= Math.abs(t.rozsaszinTele) * settings.patronAr
-    }
+  // Egyenleg közvetlenül a Tagok H-L oszlopaiból – gyors, nem kell az összes tranzakciót végigolvasni
+  const norm = email.toLowerCase().trim()
+  const tags = await getTags()
+  const tag = tags.find(t => t.email === norm || (t.email2 !== '' && t.email2 === norm))
+  return {
+    kekPatron:       tag?.uresKek  ?? 0,   // H = üres leadott → ennyi teli elvihető
+    rozsaszinPatron: tag?.uresPink ?? 0,   // I
+    kekTeli:         tag?.teleKek  ?? 0,   // J = proxy kiosztott teli
+    rozsaszinTeli:   tag?.telePink ?? 0,   // K
+    penz:            tag?.tartozas ?? 0,
   }
-
-  return balance
 }
 
 export interface Stock {
@@ -201,14 +209,21 @@ export interface Stock {
 }
 
 export async function getStock(): Promise<Stock> {
-  const transactions = await getTransactions()
+  // Teljes készlet: Tagok H-K oszlopaiból (alaptőke + felhasználói sorok összege)
+  // index 0 = összesítő képletsor (skip!), index 1+ = alaptőke + tagok
+  const tagokRows = await getSheetValues('Tagok!A2:L')   // friss, nem cachelve
+
   const stock: Stock = { kekUres: 0, kekTele: 0, rozsaszinUres: 0, rozsaszinTele: 0 }
-  for (const t of transactions) {
-    stock.kekUres += t.kekUres
-    stock.kekTele += t.kekTele
-    stock.rozsaszinUres += t.rozsaszinUres
-    stock.rozsaszinTele += t.rozsaszinTele
+
+  for (let i = 1; i < tagokRows.length; i++) {
+    const r = tagokRows[i]
+    if (!r || !r[0]) continue   // üres sor → skip
+    stock.kekUres        += parseFloat(r[7]  ?? '0') || 0   // H
+    stock.rozsaszinUres  += parseFloat(r[8]  ?? '0') || 0   // I
+    stock.kekTele        += parseFloat(r[9]  ?? '0') || 0   // J
+    stock.rozsaszinTele  += parseFloat(r[10] ?? '0') || 0   // K
   }
+
   return stock
 }
 
@@ -221,15 +236,17 @@ export interface MemberBalance {
 }
 
 export async function getAllBalances(): Promise<MemberBalance[]> {
+  // Egy getTags() hívás elég – H-L már benne van a cached tag objektumokban
   const tags = await getTags()
-  const activeTags = tags.filter(t => t.aktiv)
-  const balances = await Promise.all(
-    activeTags.map(async t => {
-      const b = await getUserBalance(t.email)
-      return { nev: t.nev, email: t.email, ...b }
-    })
-  )
-  return balances
+  return tags
+    .filter(t => t.aktiv && t.email)
+    .map(t => ({
+      nev:              t.nev,
+      email:            t.email,
+      kekPatron:        t.uresKek,   // H = üres leadott = elviteli jog
+      rozsaszinPatron:  t.uresPink,  // I
+      penz:             t.tartozas,
+    }))
 }
 
 // ==================== CSERE JAVASLAT ====================
@@ -249,7 +266,7 @@ export async function getCsereSuggestion(): Promise<CsereSuggestion[]> {
   if (osszesUres >= settings.csereMinimum) {
     suggestions.push({
       tipus: 'vegyes',
-      uzenet: `Van összesen ${osszesUres} db üres patron (${stock.kekUres} kék + ${stock.rozsaszinUres} rózsaszín)! Javaslat: cseréld minimum ${settings.csereMinimum} db-ot!`,
+      uzenet: `Van összesen ${osszesUres} db üres patron (${stock.kekUres} kék + ${stock.rozsaszinUres} rózsaszín)! Javaslat: töltess minimum ${settings.csereMinimum} db-ot!`,
       mennyiseg: osszesUres,
       csereelheto: true,
     })
@@ -269,7 +286,7 @@ export async function getCsereSuggestion(): Promise<CsereSuggestion[]> {
 // ==================== TRANZAKCIÓ RÖGZÍTÉS ====================
 
 export interface TransactionInput {
-  muvelet: 'behozas' | 'elvitel' | 'befizetes' | 'csere'
+  muvelet: 'behozas' | 'elvitel' | 'befizetes' | 'toltes' | 'csere'
   kekUres?: number
   kekTele?: number
   rozsaszinUres?: number
@@ -283,42 +300,54 @@ export interface ValidationResult {
   message?: string
 }
 
-export async function validateTransaction(data: TransactionInput, email: string): Promise<ValidationResult> {
+export async function validateTransaction(data: TransactionInput, email: string, adminEmail?: string): Promise<ValidationResult> {
   const [balance, stock, adminCheck] = await Promise.all([
     getUserBalance(email),
     getStock(),
-    isAdmin(email),
+    adminEmail ? isAdmin(adminEmail) : isAdmin(email),   // proxy esetén az eredeti admin email-t ellenőrizzük
   ])
 
   if (data.muvelet === 'elvitel') {
-    const kekElvitel = Math.abs(data.kekTele ?? 0)
+    const kekElvitel      = Math.abs(data.kekTele       ?? 0)
     const rozsaszinElvitel = Math.abs(data.rozsaszinTele ?? 0)
 
-    if (kekElvitel > balance.kekPatron) {
-      return { success: false, message: `Nem vihetsz el ${kekElvitel} db kék patront! Patron egyenleged: ${balance.kekPatron} db` }
+    // Jogosultság: leadott üres (H) + neki kiosztott teli (J)
+    if (kekElvitel > balance.kekPatron + balance.kekTeli) {
+      return { success: false, message: `Nem vihetsz el ${kekElvitel} db kék patront! Egyenleged: ${balance.kekPatron} db üres + ${balance.kekTeli} db kiosztott teli` }
     }
-    if (rozsaszinElvitel > balance.rozsaszinPatron) {
-      return { success: false, message: `Nem vihetsz el ${rozsaszinElvitel} db rózsaszín patront! Patron egyenleged: ${balance.rozsaszinPatron} db` }
+    if (rozsaszinElvitel > balance.rozsaszinPatron + balance.rozsaszinTeli) {
+      return { success: false, message: `Nem vihetsz el ${rozsaszinElvitel} db rózsaszín patront! Egyenleged: ${balance.rozsaszinPatron} db üres + ${balance.rozsaszinTeli} db kiosztott teli` }
     }
-    if (kekElvitel > stock.kekTele) {
-      return { success: false, message: `Nincs elegendő kék tele patron a közös készletben! Elérhető: ${stock.kekTele} db` }
+
+    // Banki teli fedezet a jog terhére vitt részre (ami nem a saját kiosztott teliből megy)
+    const alap = await getAlaptokeStock()
+    const kekBankbol  = Math.max(0, kekElvitel      - balance.kekTeli)
+    const pinkBankbol = Math.max(0, rozsaszinElvitel - balance.rozsaszinTeli)
+    if (kekBankbol > alap.teleKek) {
+      return { success: false, message: `Nincs elegendő teli kék patron a közös készletben! Elérhető: ${alap.teleKek} db` }
     }
-    if (rozsaszinElvitel > stock.rozsaszinTele) {
-      return { success: false, message: `Nincs elegendő rózsaszín tele patron! Elérhető: ${stock.rozsaszinTele} db` }
+    if (pinkBankbol > alap.telePink) {
+      return { success: false, message: `Nincs elegendő teli rózsaszín patron a közös készletben! Elérhető: ${alap.telePink} db` }
     }
   }
 
-  if (data.muvelet === 'csere') {
+  if (data.muvelet === 'toltes') {
     if (!adminCheck) {
-      return { success: false, message: 'Csak adminisztrátor végezhet cserét!' }
+      return { success: false, message: 'Csak adminisztrátor végezhet töltetést!' }
     }
-    const kekCsere = Math.abs(data.kekUres ?? 0)
-    const rozsaszinCsere = Math.abs(data.rozsaszinUres ?? 0)
-    const osszesenCsere = kekCsere + rozsaszinCsere
-    const osszesenUres = stock.kekUres + stock.rozsaszinUres
+    const kekLeadott     = Math.abs(data.kekUres       ?? 0)
+    const rozsaszinLeadott = Math.abs(data.rozsaszinUres ?? 0)
+    const kekAtvett      = Math.abs(data.kekTele       ?? 0)
+    const rozsaszinAtvett  = Math.abs(data.rozsaszinTele ?? 0)
+    const osszesenLeadott  = kekLeadott + rozsaszinLeadott
+    const osszesenAtvett   = kekAtvett  + rozsaszinAtvett
+    const osszesenUres     = stock.kekUres + stock.rozsaszinUres
 
-    if (osszesenCsere > osszesenUres) {
+    if (osszesenLeadott > osszesenUres) {
       return { success: false, message: `Nincs elegendő üres patron! Összesen elérhető: ${osszesenUres} db (kék: ${stock.kekUres} + rózsaszín: ${stock.rozsaszinUres})` }
+    }
+    if (osszesenAtvett !== osszesenLeadott) {
+      return { success: false, message: `A leadott (${osszesenLeadott} db) és átvett (${osszesenAtvett} db) patronok száma nem egyezik!` }
     }
   }
 
@@ -334,14 +363,97 @@ export async function validateTransaction(data: TransactionInput, email: string)
     }
   }
 
+  if (data.muvelet === 'csere') {
+    const kekDb      = Math.abs(data.kekUres       ?? 0)
+    const rozsaszinDb = Math.abs(data.rozsaszinUres ?? 0)
+    if (kekDb + rozsaszinDb === 0) {
+      return { success: false, message: 'Legalább 1 db patront kell cserélni!' }
+    }
+    // A cseréhez teli fedezet kell a banki készletből (színenként)
+    const alap = await getAlaptokeStock()
+    if (kekDb > alap.teleKek) {
+      return { success: false, message: `Nincs elegendő teli kék patron a cseréhez! Elérhető: ${alap.teleKek} db` }
+    }
+    if (rozsaszinDb > alap.telePink) {
+      return { success: false, message: `Nincs elegendő teli rózsaszín patron a cseréhez! Elérhető: ${alap.telePink} db` }
+    }
+  }
+
   return { success: true }
 }
 
-export async function addTransaction(data: TransactionInput, email: string): Promise<ValidationResult> {
-  const validation = await validateTransaction(data, email)
+// ==================== TAGOK KÉSZLET FRISSÍTÉS ====================
+
+/** Felhasználói sor H-L cellák delta-alapú frissítése */
+async function updateTagStock(
+  email: string,
+  delta: { uresKek?: number; uresPink?: number; teleKek?: number; telePink?: number; tartozas?: number },
+): Promise<void> {
+  const norm = email.toLowerCase().trim()
+  const rows = await getSheetWithRowNumbers('Tagok!A2:L')
+  const found = rows.find(r =>
+    r.values[1]?.toLowerCase().trim() === norm ||
+    ((r.values[6]?.toLowerCase().trim() || '') === norm && norm !== ''),
+  )
+  if (!found) return
+
+  const cur = {
+    uresKek:  parseFloat(found.values[7]  ?? '0') || 0,
+    uresPink: parseFloat(found.values[8]  ?? '0') || 0,
+    teleKek:  parseFloat(found.values[9]  ?? '0') || 0,
+    telePink: parseFloat(found.values[10] ?? '0') || 0,
+    tartozas: parseFloat(found.values[11] ?? '0') || 0,
+  }
+
+  await updateRowCells('Tagok', found.row, 8, [
+    cur.uresKek  + (delta.uresKek  ?? 0),
+    cur.uresPink + (delta.uresPink ?? 0),
+    cur.teleKek  + (delta.teleKek  ?? 0),
+    cur.telePink + (delta.telePink ?? 0),
+    cur.tartozas + (delta.tartozas ?? 0),
+  ])
+  invalidate('tagok')
+}
+
+/** Alaptőke (bank) sor aktuális H-K értékei – validációhoz */
+async function getAlaptokeStock(): Promise<{ uresKek: number; uresPink: number; teleKek: number; telePink: number }> {
+  const rows = await getSheetValues('Tagok!A2:L')
+  const r = rows.find(r => r[0]?.toLowerCase().trim() === 'alaptőke')
+  return {
+    uresKek:  parseFloat(r?.[7]  ?? '0') || 0,
+    uresPink: parseFloat(r?.[8]  ?? '0') || 0,
+    teleKek:  parseFloat(r?.[9]  ?? '0') || 0,
+    telePink: parseFloat(r?.[10] ?? '0') || 0,
+  }
+}
+
+/** Alaptőke sor H-K frissítése (töltetés: H/I csökken – üres ki, J/K nő – teli be) */
+async function updateAlaptoke(delta: { uresKek?: number; uresPink?: number; teleKek?: number; telePink?: number }): Promise<void> {
+  const rows = await getSheetWithRowNumbers('Tagok!A2:L')
+  const alaptokeRow = rows.find(r => r.values[0]?.toLowerCase().trim() === 'alaptőke')
+  if (!alaptokeRow) return
+
+  const curH = parseFloat(alaptokeRow.values[7]  ?? '0') || 0
+  const curI = parseFloat(alaptokeRow.values[8]  ?? '0') || 0
+  const curJ = parseFloat(alaptokeRow.values[9]  ?? '0') || 0
+  const curK = parseFloat(alaptokeRow.values[10] ?? '0') || 0
+
+  await updateRowCells('Tagok', alaptokeRow.row, 8, [
+    curH + (delta.uresKek  ?? 0),
+    curI + (delta.uresPink ?? 0),
+    curJ + (delta.teleKek  ?? 0),
+    curK + (delta.telePink ?? 0),
+  ])
+  invalidate('tagok')
+}
+
+// ==================== TRANZAKCIÓ RÖGZÍTÉS ====================
+
+export async function addTransaction(data: TransactionInput, email: string, adminEmail?: string): Promise<ValidationResult> {
+  const validation = await validateTransaction(data, email, adminEmail)
   if (!validation.success) return validation
 
-  const userName = await getUserName(email)
+  const [userName, settings] = await Promise.all([getUserName(email), getSettings()])
 
   const row = [
     new Date().toISOString(),
@@ -356,6 +468,85 @@ export async function addTransaction(data: TransactionInput, email: string): Pro
   ]
 
   await appendRow('Tranzakciók', row)
+
+  // Tagok készlet-oszlopok frissítése tranzakció típusa szerint
+  if (data.muvelet === 'behozas') {
+    // Felhasználó üres patronokat hoz be → H, I nő
+    await updateTagStock(email, {
+      uresKek:  data.kekUres       ?? 0,
+      uresPink: data.rozsaszinUres ?? 0,
+    })
+  } else if (data.muvelet === 'elvitel') {
+    // Felhasználó teli patront visz el. Először a neki kiosztott teliből (J/K) fogyaszt,
+    // a maradék a leadott-üres jog (H/I) terhére a banki teli készletből megy ki.
+    const kek       = Math.abs(data.kekTele        ?? 0)
+    const rozsaszin = Math.abs(data.rozsaszinTele  ?? 0)
+    const tag = await getTag(email)
+    const kekJbol   = Math.min(kek,       tag?.teleKek  ?? 0)
+    const pinkJbol  = Math.min(rozsaszin, tag?.telePink ?? 0)
+    const kekHbol   = kek       - kekJbol
+    const pinkHbol  = rozsaszin - pinkJbol
+
+    await updateTagStock(email, {
+      uresKek:  -kekHbol,    // H csökken (elviteli jog elhasználva)
+      uresPink: -pinkHbol,
+      teleKek:  -kekJbol,    // J csökken (kiosztott teli elvitele)
+      telePink: -pinkJbol,
+      tartozas: -(kek + rozsaszin) * settings.patronAr,  // L csökken (adósság nő)
+    })
+
+    if (kekHbol + pinkHbol > 0) {
+      // A jog terhére vitt teli a bank készletéből fogy; a tag üres palackja a banké lesz
+      await updateAlaptoke({
+        uresKek:  kekHbol,    // az üres palack átszáll a bankra
+        uresPink: pinkHbol,
+        teleKek:  -kekHbol,   // a teli kimegy a banki készletből
+        telePink: -pinkHbol,
+      })
+    }
+  } else if (data.muvelet === 'toltes') {
+    // Töltetés: üres patronok kimennek (kekUres/rozsaszinUres negatív),
+    // teli patronok bejönnek (kekTele/rozsaszinTele pozitív) – szín szabadon változhat
+    if (adminEmail) {
+      // Proxy töltetés: a palackok a tag sorára kerülnek (H→J konverzió),
+      // a költség a végrehajtó adminra – a tag majd a kiosztott teli ELVITELEKOR tartozik
+      await updateTagStock(email, {
+        uresKek:  data.kekUres       ?? 0,  // negatív → H csökken
+        uresPink: data.rozsaszinUres ?? 0,  // negatív → I csökken
+        teleKek:  data.kekTele       ?? 0,  // pozitív → J nő (tényleges teli átvétel)
+        telePink: data.rozsaszinTele ?? 0,  // pozitív → K nő
+      })
+      await updateTagStock(adminEmail, { tartozas: data.osszegFt ?? 0 })
+    } else {
+      // Nem-proxy töltetés: alaptőke sort frissítjük
+      await updateAlaptoke({
+        uresKek:  data.kekUres       ?? 0,  // negatív
+        uresPink: data.rozsaszinUres ?? 0,
+        teleKek:  data.kekTele       ?? 0,  // tényleges teli átvétel (nem abs(ures)!)
+        telePink: data.rozsaszinTele ?? 0,
+      })
+      // Admin L-je változik (osszegFt negatív = kiadás)
+      await updateTagStock(email, { tartozas: data.osszegFt ?? 0 })
+    }
+  } else if (data.muvelet === 'csere') {
+    // Felhasználói közvetlen csere: N üres behoz + N teli elvisz (azonos szín).
+    // A tag H-ja nettó nulla; a hozott üres a banké lesz, a teli a bank készletéből fogy.
+    const kek       = Math.abs(data.kekUres       ?? 0)
+    const rozsaszin = Math.abs(data.rozsaszinUres ?? 0)
+    await updateTagStock(email, {
+      tartozas: -(kek + rozsaszin) * settings.patronAr,  // L csökken (tartozás nő)
+    })
+    await updateAlaptoke({
+      uresKek:  kek,         // hozott üres → bank H nő
+      uresPink: rozsaszin,
+      teleKek:  -kek,        // elvitt teli → bank J csökken
+      telePink: -rozsaszin,
+    })
+  } else if (data.muvelet === 'befizetes') {
+    // Befizetés → L nő (adósság csökken)
+    await updateTagStock(email, { tartozas: data.osszegFt ?? 0 })
+  }
+
   return { success: true, message: 'Tranzakció sikeresen rögzítve!' }
 }
 
@@ -373,6 +564,7 @@ export interface DashboardData {
   csereSuggestions: CsereSuggestion[]
   szamlaszam: string
   revolut: string
+  adminUsers?: Array<{ nev: string; email: string }>
 }
 
 export async function getDashboardData(email: string): Promise<DashboardData> {
@@ -384,6 +576,10 @@ export async function getDashboardData(email: string): Promise<DashboardData> {
     getSettings(),
     getCsereSuggestion(),
   ])
+
+  const adminUsers = adminCheck
+    ? (await getTags()).filter(t => t.aktiv).map(t => ({ nev: t.nev, email: t.email }))
+    : undefined
 
   return {
     userName: tag?.nev ?? email.split('@')[0],
@@ -397,5 +593,6 @@ export async function getDashboardData(email: string): Promise<DashboardData> {
     csereSuggestions,
     szamlaszam: settings.szamlaszam,
     revolut: settings.revolut,
+    adminUsers,
   }
 }
